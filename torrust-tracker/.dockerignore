@@ -1,0 +1,16 @@
+/.git
+/.git-blame-ignore
+/.github
+/.gitignore
+/.vscode
+/bin/
+/tracker.*
+/cSpell.json
+/data.db
+/docker/bin/
+/NOTICE
+/README.md
+/rustfmt.toml
+/storage/
+/target/
+/etc/

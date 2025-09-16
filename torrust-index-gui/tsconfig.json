@@ -1,0 +1,14 @@
+{
+  // https://v3.nuxtjs.org/concepts/typescript
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "strictPropertyInitialization": false,
+    "strictNullChecks": false,
+    "baseUrl": "./",
+    "paths": {
+      "#imports": [".nuxt/imports.d.ts"],
+      "~/*": ["./*"],
+      "@/*": ["./*"]
+    }
+  }
+}

@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Torrust Tracker
+  tracker:
+    build:
+      context: ./torrust-tracker
+      dockerfile: Containerfile
+    container_name: torrust-tracker
+    restart: unless-stopped
+    ports:
+      - "6969:6969/udp"    # UDP tracker
+      - "7070:7070"        # HTTP tracker
+      - "1212:1212"        # Management API
+    volumes:
+      - tracker_data:/app/storage
+    environment:
+      - TORRUST_TRACKER_CONFIG_TOML_PATH=/app/storage/tracker/etc/tracker.toml
+    networks:
+      - torrust-network
+
+  # Torrust Index (Backend API)
+  index:
+    build:
+      context: ./torrust-index
+      dockerfile: Containerfile
+    container_name: torrust-index
+    restart: unless-stopped
+    ports:
+      - "3001:3001"        # API
+      - "3002:3002"        # Statistics importer
+    volumes:
+      - index_data:/app/storage
+    environment:
+      - TORRUST_INDEX_CONFIG_TOML_PATH=/app/storage/index/etc/index.toml
+      - TORRUST_INDEX_API_CORS_PERMISSIVE=1
+      - TORRUST_INDEX_CONFIG_OVERRIDE_TRACKER__TOKEN=${TRACKER_TOKEN}
+      - TORRUST_INDEX_CONFIG_OVERRIDE_AUTH__SECRET_KEY=${AUTH_SECRET_KEY}
+    depends_on:
+      - tracker
+    networks:
+      - torrust-network
+
+  # Torrust Index GUI (Frontend)
+  gui:
+    build:
+      context: ./torrust-index-gui
+      dockerfile: Containerfile
+    container_name: torrust-gui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"        # Web interface
+    environment:
+      - NUXT_PUBLIC_API_BASE=http://index:3001/v1
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+    depends_on:
+      - index
+    networks:
+      - torrust-network
+
+  # Nginx Reverse Proxy (Optional)
+  nginx:
+    image: nginx:alpine
+    container_name: torrust-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - gui
+      - index
+      - tracker
+    networks:
+      - torrust-network
+
+volumes:
+  tracker_data:
+  index_data:
+
+networks:
+  torrust-network:
+    driver: bridge
