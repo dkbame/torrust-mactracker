@@ -1,11 +1,10 @@
-version: '3.8'
-
 services:
   # Torrust Tracker
   tracker:
     build:
       context: ./torrust-tracker
       dockerfile: Containerfile
+      target: release
     container_name: torrust-tracker
     restart: unless-stopped
     ports:
@@ -13,9 +12,11 @@ services:
       - "7070:7070"        # HTTP tracker
       - "1212:1212"        # Management API
     volumes:
-      - tracker_data:/app/storage
+      - tracker_data:/var/lib/torrust/tracker
+      - ./torrust-tracker/share/default/config:/etc/torrust/tracker:ro
     environment:
-      - TORRUST_TRACKER_CONFIG_TOML_PATH=/app/storage/tracker/etc/tracker.toml
+      - TORRUST_TRACKER_CONFIG_TOML_PATH=/etc/torrust/tracker/tracker.development.sqlite3.toml
+      - TORRUST_TRACKER_CONFIG_OVERRIDE_CORE__DATABASE__DRIVER=sqlite3
     networks:
       - torrust-network
 
@@ -24,15 +25,18 @@ services:
     build:
       context: ./torrust-index
       dockerfile: Containerfile
+      target: release
     container_name: torrust-index
     restart: unless-stopped
     ports:
       - "3001:3001"        # API
       - "3002:3002"        # Statistics importer
     volumes:
-      - index_data:/app/storage
+      - index_data:/var/lib/torrust/index
+      - ./torrust-index/share/default/config:/etc/torrust/index:ro
     environment:
-      - TORRUST_INDEX_CONFIG_TOML_PATH=/app/storage/index/etc/index.toml
+      - TORRUST_INDEX_CONFIG_TOML_PATH=/etc/torrust/index/index.development.sqlite3.toml
+      - TORRUST_INDEX_DATABASE_DRIVER=sqlite3
       - TORRUST_INDEX_API_CORS_PERMISSIVE=1
       - TORRUST_INDEX_CONFIG_OVERRIDE_TRACKER__TOKEN=${TRACKER_TOKEN}
       - TORRUST_INDEX_CONFIG_OVERRIDE_AUTH__SECRET_KEY=${AUTH_SECRET_KEY}
@@ -46,6 +50,7 @@ services:
     build:
       context: ./torrust-index-gui
       dockerfile: Containerfile
+      target: release
     container_name: torrust-gui
     restart: unless-stopped
     ports:
