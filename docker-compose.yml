@@ -2,9 +2,8 @@ services:
   # Torrust Tracker
   tracker:
     build:
-      context: ./torrust-tracker
-      dockerfile: Containerfile
-      target: release
+      context: .
+      dockerfile: Dockerfile.tracker
     container_name: torrust-tracker
     restart: unless-stopped
     ports:
@@ -23,9 +22,8 @@ services:
   # Torrust Index (Backend API)
   index:
     build:
-      context: ./torrust-index
-      dockerfile: Containerfile
-      target: release
+      context: .
+      dockerfile: Dockerfile.index
     container_name: torrust-index
     restart: unless-stopped
     ports:
