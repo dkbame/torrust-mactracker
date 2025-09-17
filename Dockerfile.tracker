@@ -1,5 +1,5 @@
 # Custom Dockerfile for Torrust Tracker with compatible Rust version
-FROM rust:1.83.0-bookworm AS builder
+FROM rust:1.85.0-bookworm AS builder
 
 WORKDIR /app
 COPY torrust-tracker/ .
@@ -11,8 +11,9 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Build the application
-RUN cargo build --release
+# Build the application with memory optimization
+ENV CARGO_BUILD_JOBS=1
+RUN cargo build --release --jobs 1
 
 # Runtime stage
 FROM debian:bookworm-slim
