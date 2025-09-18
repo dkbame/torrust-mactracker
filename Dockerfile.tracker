@@ -1,0 +1,41 @@
+# Torrust Tracker Dockerfile
+FROM rust:1.85.0-bookworm AS builder
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Clone and build torrust-tracker
+RUN git clone https://github.com/torrust/torrust-tracker.git . && \
+    cargo build --release
+
+# Runtime stage
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy binary
+COPY --from=builder /app/target/release/torrust-tracker /usr/local/bin/
+
+# Create directories
+RUN mkdir -p /var/lib/torrust/tracker /etc/torrust/tracker
+
+# Expose ports
+EXPOSE 6969/udp 7070 1212
+
+# Set environment variables
+ENV TORRUST_TRACKER_CONFIG_TOML_PATH=/etc/torrust/tracker/tracker.development.sqlite3.toml
+ENV TORRUST_TRACKER_CONFIG_OVERRIDE_CORE__DATABASE__DRIVER=sqlite3
+
+# Run the tracker
+CMD ["torrust-tracker"]

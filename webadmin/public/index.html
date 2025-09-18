@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torrust Web Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .service-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-exited {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .service-info {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(81, 207, 102, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .logs-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logs-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .logs-content {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 1000;
+        }
+
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .service-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">
+        <span id="connectionText">Connecting...</span>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Torrust Web Admin</h1>
+            <p>Manage your Torrust services with ease</p>
+        </div>
+
+        <div class="services-grid" id="servicesGrid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Loading services...</p>
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <div class="logs-header">
+                <h3 class="logs-title">📋 Service Logs</h3>
+                <select id="logService" class="btn">
+                    <option value="">Select a service</option>
+                </select>
+            </div>
+            <div class="logs-content" id="logsContent">
+                Select a service to view logs
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TorrustAdmin {
+            constructor() {
+                this.ws = null;
+                this.services = [];
+                this.init();
+            }
+
+            init() {
+                this.connectWebSocket();
+                this.loadServices();
+                this.setupEventListeners();
+            }
+
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.hostname}:8081`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.updateConnectionStatus(true);
+                    console.log('WebSocket connected');
+                };
+                
+                this.ws.onclose = () => {
+                    this.updateConnectionStatus(false);
+                    console.log('WebSocket disconnected');
+                    // Reconnect after 3 seconds
+                    setTimeout(() => this.connectWebSocket(), 3000);
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'status_update') {
+                        this.updateServices(data.data);
+                    }
+                };
+            }
+
+            updateConnectionStatus(connected) {
+                const status = document.getElementById('connectionStatus');
+                const text = document.getElementById('connectionText');
+                
+                if (connected) {
+                    status.className = 'connection-status connected';
+                    text.textContent = '🟢 Connected';
+                } else {
+                    status.className = 'connection-status disconnected';
+                    text.textContent = '🔴 Disconnected';
+                }
+            }
+
+            async loadServices() {
+                try {
+                    const response = await fetch('/api/services');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.updateServices(data.data);
+                    }
+                } catch (error) {
+                    console.error('Error loading services:', error);
+                }
+            }
+
+            updateServices(services) {
+                this.services = services;
+                this.renderServices();
+                this.updateLogServiceSelect();
+            }
+
+            renderServices() {
+                const grid = document.getElementById('servicesGrid');
+                
+                if (this.services.length === 0) {
+                    grid.innerHTML = '<div class="loading"><p>No services found</p></div>';
+                    return;
+                }
+
+                grid.innerHTML = this.services.map(service => `
+                    <div class="service-card">
+                        <div class="service-header">
+                            <h3 class="service-name">${service.name}</h3>
+                            <span class="status-badge status-${service.status}">${service.status}</span>
+                        </div>
+                        <div class="service-info">
+                            <div class="info-row">
+                                <span class="info-label">Image:</span>
+                                <span class="info-value">${service.image}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Created:</span>
+                                <span class="info-value">${new Date(service.created * 1000).toLocaleString()}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Ports:</span>
+                                <span class="info-value">${service.ports.map(p => p.PublicPort ? `${p.PublicPort}:${p.PrivatePort}` : p.PrivatePort).join(', ')}</span>
+                            </div>
+                        </div>
+                        <div class="service-actions">
+                            ${service.status === 'running' ? 
+                                `<button class="btn btn-danger" onclick="admin.stopService('${service.name}')">Stop</button>
+                                 <button class="btn btn-primary" onclick="admin.restartService('${service.name}')">Restart</button>` :
+                                `<button class="btn btn-success" onclick="admin.startService('${service.name}')">Start</button>`
+                            }
+                            <button class="btn btn-primary" onclick="admin.viewLogs('${service.name}')">View Logs</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateLogServiceSelect() {
+                const select = document.getElementById('logService');
+                select.innerHTML = '<option value="">Select a service</option>' +
+                    this.services.map(service => 
+                        `<option value="${service.name}">${service.name}</option>`
+                    ).join('');
+            }
+
+            async startService(name) {
+                try {
+                    const response = await fetch(`/api/services/${name}/start`, { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showNotification(`Service ${name} started successfully`, 'success');
+                        this.loadServices();
+                    } else {
+                        this.showNotification(`Failed to start ${name}: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Error starting ${name}: ${error.message}`, 'error');
+                }
+            }
+
+            async stopService(name) {
+                try {
+                    const response = await fetch(`/api/services/${name}/stop`, { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showNotification(`Service ${name} stopped successfully`, 'success');
+                        this.loadServices();
+                    } else {
+                        this.showNotification(`Failed to stop ${name}: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Error stopping ${name}: ${error.message}`, 'error');
+                }
+            }
+
+            async restartService(name) {
+                try {
+                    const response = await fetch(`/api/services/${name}/restart`, { method: 'POST' });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showNotification(`Service ${name} restarted successfully`, 'success');
+                        this.loadServices();
+                    } else {
+                        this.showNotification(`Failed to restart ${name}: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification(`Error restarting ${name}: ${error.message}`, 'error');
+                }
+            }
+
+            async viewLogs(name) {
+                try {
+                    const response = await fetch(`/api/services/${name}/logs`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        document.getElementById('logsContent').textContent = data.data;
+                        document.getElementById('logService').value = name;
+                    } else {
+                        document.getElementById('logsContent').textContent = `Error loading logs: ${data.error}`;
+                    }
+                } catch (error) {
+                    document.getElementById('logsContent').textContent = `Error loading logs: ${error.message}`;
+                }
+            }
+
+            setupEventListeners() {
+                document.getElementById('logService').addEventListener('change', (e) => {
+                    if (e.target.value) {
+                        this.viewLogs(e.target.value);
+                    }
+                });
+            }
+
+            showNotification(message, type) {
+                // Simple notification - you can enhance this with a proper notification system
+                console.log(`${type.toUpperCase()}: ${message}`);
+                alert(message);
+            }
+        }
+
+        // Initialize the admin interface
+        const admin = new TorrustAdmin();
+    </script>
+</body>
+</html>
