@@ -246,6 +246,122 @@
             z-index: 1000;
         }
 
+        /* Installer Section Styles */
+        .installer-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .installer-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .installer-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .installer-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .docker-status {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .docker-status.success {
+            background: #d4edda;
+            color: #155724;
+            border-radius: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .docker-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .services-selection {
+            margin-top: 20px;
+        }
+
+        .services-selection h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .service-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .service-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .service-option:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .service-option input[type="checkbox"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+
+        .service-info {
+            flex: 1;
+        }
+
+        .service-info strong {
+            display: block;
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .service-info small {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .installer-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .installer-actions .btn {
+            min-width: 200px;
+            padding: 12px 24px;
+            font-size: 1rem;
+        }
+
         .connected {
             background: #d4edda;
             color: #155724;
@@ -283,7 +399,63 @@
     <div class="container">
         <div class="header">
             <h1>🚀 Torrust Web Admin</h1>
-            <p>Manage your Torrust services with ease</p>
+            <p>Install and manage your Torrust services with ease</p>
+        </div>
+
+        <!-- Torrust Installer Panel -->
+        <div class="installer-section">
+            <div class="installer-header">
+                <h2>🎯 Torrust Installer</h2>
+                <p>One-click installation for Torrust services</p>
+            </div>
+            
+            <div class="installer-content">
+                <div class="docker-status" id="dockerStatus">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Checking Docker status...</p>
+                    </div>
+                </div>
+                
+                <div class="services-selection" id="servicesSelection" style="display: none;">
+                    <h3>Select Services to Install:</h3>
+                    <div class="service-options">
+                        <label class="service-option">
+                            <input type="checkbox" id="tracker" value="tracker" checked>
+                            <span class="service-info">
+                                <strong>Torrust Tracker</strong>
+                                <small>BitTorrent tracker service (Ports: 6969/udp, 7070, 1212)</small>
+                            </span>
+                        </label>
+                        <label class="service-option">
+                            <input type="checkbox" id="index" value="index" checked>
+                            <span class="service-info">
+                                <strong>Torrust Index</strong>
+                                <small>Backend API and database (Ports: 3001, 3002)</small>
+                            </span>
+                        </label>
+                        <label class="service-option">
+                            <input type="checkbox" id="gui" value="gui" checked>
+                            <span class="service-info">
+                                <strong>Torrust GUI</strong>
+                                <small>Frontend web interface (Port: 3000)</small>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <div class="installer-actions">
+                        <button class="btn btn-primary" id="installBtn" onclick="installTorrust()">
+                            🚀 Install Selected Services
+                        </button>
+                        <button class="btn btn-success" id="startAllBtn" onclick="startAllServices()" style="display: none;">
+                            ▶️ Start All Services
+                        </button>
+                        <button class="btn btn-danger" id="stopAllBtn" onclick="stopAllServices()" style="display: none;">
+                            ⏹️ Stop All Services
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="services-grid" id="servicesGrid">
@@ -505,8 +677,158 @@
             }
         }
 
+        // Torrust Installer Functions
+        async function checkDockerStatus() {
+            try {
+                const response = await fetch('/api/docker/status');
+                const data = await response.json();
+                
+                const dockerStatus = document.getElementById('dockerStatus');
+                const servicesSelection = document.getElementById('servicesSelection');
+                
+                if (data.success) {
+                    dockerStatus.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Docker is Available</h4>
+                            <p>Docker: ${data.stdout}</p>
+                        </div>
+                    `;
+                    dockerStatus.className = 'docker-status success';
+                    servicesSelection.style.display = 'block';
+                } else {
+                    dockerStatus.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Docker Not Available</h4>
+                            <p>Error: ${data.error}</p>
+                            <p>Please install Docker and Docker Compose to use the Torrust installer.</p>
+                        </div>
+                    `;
+                    dockerStatus.className = 'docker-status error';
+                }
+            } catch (error) {
+                console.error('Error checking Docker status:', error);
+                document.getElementById('dockerStatus').innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error Checking Docker</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function installTorrust() {
+            const selectedServices = [];
+            document.querySelectorAll('.service-option input[type="checkbox"]:checked').forEach(checkbox => {
+                selectedServices.push(checkbox.value);
+            });
+
+            if (selectedServices.length === 0) {
+                alert('Please select at least one service to install.');
+                return;
+            }
+
+            const installBtn = document.getElementById('installBtn');
+            installBtn.disabled = true;
+            installBtn.textContent = '🔄 Installing...';
+
+            try {
+                const response = await fetch('/api/torrust/install', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ services: selectedServices })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ Torrust configuration created successfully!');
+                    document.getElementById('startAllBtn').style.display = 'inline-block';
+                    document.getElementById('stopAllBtn').style.display = 'inline-block';
+                    installBtn.textContent = '✅ Installed';
+                } else {
+                    alert(`❌ Installation failed: ${data.error}`);
+                    installBtn.disabled = false;
+                    installBtn.textContent = '🚀 Install Selected Services';
+                }
+            } catch (error) {
+                console.error('Error installing Torrust:', error);
+                alert(`❌ Installation error: ${error.message}`);
+                installBtn.disabled = false;
+                installBtn.textContent = '🚀 Install Selected Services';
+            }
+        }
+
+        async function startAllServices() {
+            const startBtn = document.getElementById('startAllBtn');
+            startBtn.disabled = true;
+            startBtn.textContent = '🔄 Starting...';
+
+            try {
+                const response = await fetch('/api/torrust/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ service: 'all' })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ All Torrust services started successfully!');
+                    startBtn.textContent = '▶️ All Services Running';
+                } else {
+                    alert(`❌ Failed to start services: ${data.error}`);
+                    startBtn.disabled = false;
+                    startBtn.textContent = '▶️ Start All Services';
+                }
+            } catch (error) {
+                console.error('Error starting services:', error);
+                alert(`❌ Error starting services: ${error.message}`);
+                startBtn.disabled = false;
+                startBtn.textContent = '▶️ Start All Services';
+            }
+        }
+
+        async function stopAllServices() {
+            const stopBtn = document.getElementById('stopAllBtn');
+            stopBtn.disabled = true;
+            stopBtn.textContent = '🔄 Stopping...';
+
+            try {
+                const response = await fetch('/api/torrust/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ service: 'all' })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ All Torrust services stopped successfully!');
+                    stopBtn.textContent = '⏹️ All Services Stopped';
+                } else {
+                    alert(`❌ Failed to stop services: ${data.error}`);
+                    stopBtn.disabled = false;
+                    stopBtn.textContent = '⏹️ Stop All Services';
+                }
+            } catch (error) {
+                console.error('Error stopping services:', error);
+                alert(`❌ Error stopping services: ${error.message}`);
+                stopBtn.disabled = false;
+                stopBtn.textContent = '⏹️ Stop All Services';
+            }
+        }
+
         // Initialize the admin interface
         const admin = new TorrustAdmin();
+        
+        // Check Docker status when page loads
+        checkDockerStatus();
     </script>
 </body>
 </html>
