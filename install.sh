@@ -74,9 +74,7 @@ git clone https://github.com/dkbame/torrust-mactracker.git .
 # Create environment file
 log "🔐 Creating environment configuration..."
 cat > .env << EOF
-# Torrust Configuration
-TRACKER_TOKEN=$(openssl rand -base64 32)
-AUTH_SECRET_KEY=$(openssl rand -base64 32)
+# Web Admin Configuration
 ADMIN_SECRET=$(openssl rand -base64 32)
 
 # Domain Configuration (update these)
@@ -110,19 +108,15 @@ ufw --force enable
 ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
-ufw allow 6969/udp
-ufw allow 7070/tcp
-ufw allow 3000/tcp
-ufw allow 3001/tcp
 ufw allow 8080/tcp
 
 # Start services
-log "🚀 Starting Torrust services..."
+log "🚀 Starting Web Admin services..."
 docker-compose up -d
 
 # Wait for services to start
 log "⏳ Waiting for services to start..."
-sleep 30
+sleep 10
 
 # Check service status
 log "📊 Checking service status..."
@@ -171,9 +165,8 @@ echo ""
 echo "🎉 Torrust Web Admin is now running!"
 echo ""
 echo "📊 Access Points:"
-echo "   • Main Interface: http://$(curl -s ifconfig.me):3000"
 echo "   • Web Admin: http://$(curl -s ifconfig.me):8080"
-echo "   • API: http://$(curl -s ifconfig.me):3001"
+echo "   • Web Admin (HTTPS): https://$(curl -s ifconfig.me)"
 echo ""
 echo "🔧 Management Commands:"
 echo "   • View logs: docker-compose logs -f"

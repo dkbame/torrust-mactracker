@@ -1,17 +1,17 @@
 # Web Admin Dockerfile
 FROM node:20-alpine
 
+# Install git and other dependencies
+RUN apk add --no-cache git
+
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY webadmin/package*.json ./
+# Copy all webadmin files
+COPY webadmin/ ./
 
 # Install dependencies
 RUN npm install
-
-# Copy source code
-COPY webadmin/ ./
 
 # Expose port
 EXPOSE 8080
