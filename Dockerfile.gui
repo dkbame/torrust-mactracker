@@ -1,6 +1,9 @@
 # Torrust Index GUI Dockerfile
 FROM node:20-alpine AS builder
 
+# Install git
+RUN apk add --no-cache git
+
 # Set working directory
 WORKDIR /app
 
