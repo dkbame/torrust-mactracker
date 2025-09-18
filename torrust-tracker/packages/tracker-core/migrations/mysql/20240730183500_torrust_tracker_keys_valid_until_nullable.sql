@@ -1,1 +1,0 @@
-ALTER TABLE `keys` CHANGE `valid_until` `valid_until` INT (10);

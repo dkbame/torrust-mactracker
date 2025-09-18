@@ -1,1 +1,0 @@
-ALTER TABLE torrust_users CHANGE date_registered date_registered DATETIME DEFAULT NULL
