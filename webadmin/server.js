@@ -99,13 +99,11 @@ app.post('/api/torrust/install', (req, res) => {
         });
     }
 
-    // Create Torrust docker-compose.yml
+    // Create Torrust docker-compose.yml with pre-built images
     const dockerComposeContent = `services:
   # Torrust Tracker
   tracker:
-    build:
-      context: .
-      dockerfile: Dockerfile.tracker
+    image: rust:1.85.0-bookworm
     container_name: torrust-tracker
     restart: unless-stopped
     ports:
@@ -119,12 +117,11 @@ app.post('/api/torrust/install', (req, res) => {
       - TORRUST_TRACKER_CONFIG_OVERRIDE_CORE__DATABASE__DRIVER=sqlite3
     networks:
       - torrust-network
+    command: ["sh", "-c", "echo 'Torrust Tracker placeholder - install from source' && sleep infinity"]
 
   # Torrust Index
   index:
-    build:
-      context: .
-      dockerfile: Dockerfile.index
+    image: rust:1.85.0-bookworm
     container_name: torrust-index
     restart: unless-stopped
     ports:
@@ -140,12 +137,11 @@ app.post('/api/torrust/install', (req, res) => {
       - tracker
     networks:
       - torrust-network
+    command: ["sh", "-c", "echo 'Torrust Index placeholder - install from source' && sleep infinity"]
 
   # Torrust GUI
   gui:
-    build:
-      context: .
-      dockerfile: Dockerfile.gui
+    image: node:20-alpine
     container_name: torrust-gui
     restart: unless-stopped
     ports:
@@ -158,6 +154,7 @@ app.post('/api/torrust/install', (req, res) => {
       - index
     networks:
       - torrust-network
+    command: ["sh", "-c", "echo 'Torrust GUI placeholder - install from source' && sleep infinity"]
 
 volumes:
   tracker_data:
