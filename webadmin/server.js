@@ -99,78 +99,104 @@ app.post('/api/torrust/install', (req, res) => {
         });
     }
 
-    // Create Torrust docker-compose.yml with pre-built images
-    const dockerComposeContent = `services:
-  # Torrust Tracker
-  tracker:
-    image: rust:1.85.0-bookworm
-    container_name: torrust-tracker
-    restart: unless-stopped
-    ports:
-      - "6969:6969/udp"
-      - "7070:7070"
-      - "1212:1212"
-    volumes:
-      - tracker_data:/var/lib/torrust/tracker
-    environment:
-      - TORRUST_TRACKER_CONFIG_TOML_PATH=/etc/torrust/tracker/tracker.development.sqlite3.toml
-      - TORRUST_TRACKER_CONFIG_OVERRIDE_CORE__DATABASE__DRIVER=sqlite3
-    networks:
-      - torrust-network
-    command: ["sh", "-c", "echo 'Torrust Tracker placeholder - install from source' && sleep infinity"]
+    // Create installation script
+    const installScript = `#!/bin/bash
+set -e
 
-  # Torrust Index
-  index:
-    image: rust:1.85.0-bookworm
-    container_name: torrust-index
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
-      - "3002:3002"
-    volumes:
-      - index_data:/var/lib/torrust/index
-    environment:
-      - TORRUST_INDEX_CONFIG_TOML_PATH=/etc/torrust/index/index.development.sqlite3.toml
-      - TORRUST_INDEX_DATABASE_DRIVER=sqlite3
-      - TORRUST_INDEX_API_CORS_PERMISSIVE=1
-    depends_on:
-      - tracker
-    networks:
-      - torrust-network
-    command: ["sh", "-c", "echo 'Torrust Index placeholder - install from source' && sleep infinity"]
+echo "🚀 Installing Torrust services..."
 
-  # Torrust GUI
-  gui:
-    image: node:20-alpine
-    container_name: torrust-gui
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      - NUXT_PUBLIC_API_BASE=http://index:3001/v1
-      - NITRO_HOST=0.0.0.0
-      - NITRO_PORT=3000
-    depends_on:
-      - index
-    networks:
-      - torrust-network
-    command: ["sh", "-c", "echo 'Torrust GUI placeholder - install from source' && sleep infinity"]
+# Install Rust if not already installed
+if ! command -v cargo &> /dev/null; then
+    echo "📦 Installing Rust..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    source ~/.cargo/env
+fi
 
-volumes:
-  tracker_data:
-  index_data:
+# Install Node.js if not already installed
+if ! command -v node &> /dev/null; then
+    echo "📦 Installing Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+fi
 
-networks:
-  torrust-network:
-    driver: bridge`;
+# Create directories
+mkdir -p /opt/torrust-admin/torrust-services/{tracker,index,gui}
 
-    // Write docker-compose.yml
-    fs.writeFileSync('/opt/torrust-admin/torrust-docker-compose.yml', dockerComposeContent);
+# Clone and build Torrust Tracker
+if [ -d "/opt/torrust-admin/torrust-services/tracker" ]; then
+    echo "🔄 Updating Torrust Tracker..."
+    cd /opt/torrust-admin/torrust-services/tracker
+    git pull origin main
+else
+    echo "📥 Cloning Torrust Tracker..."
+    cd /opt/torrust-admin/torrust-services
+    git clone https://github.com/torrust/torrust-tracker.git tracker
+    cd tracker
+fi
+cargo build --release
+echo "✅ Torrust Tracker built successfully!"
+
+# Clone and build Torrust Index
+if [ -d "/opt/torrust-admin/torrust-services/index" ]; then
+    echo "🔄 Updating Torrust Index..."
+    cd /opt/torrust-admin/torrust-services/index
+    git pull origin main
+else
+    echo "📥 Cloning Torrust Index..."
+    cd /opt/torrust-admin/torrust-services
+    git clone https://github.com/torrust/torrust-index.git index
+    cd index
+fi
+cargo build --release
+echo "✅ Torrust Index built successfully!"
+
+# Clone and build Torrust GUI
+if [ -d "/opt/torrust-admin/torrust-services/gui" ]; then
+    echo "🔄 Updating Torrust GUI..."
+    cd /opt/torrust-admin/torrust-services/gui
+    git pull origin main
+else
+    echo "📥 Cloning Torrust GUI..."
+    cd /opt/torrust-admin/torrust-services
+    git clone https://github.com/torrust/torrust-index-gui.git gui
+    cd gui
+fi
+npm install
+npm run build
+echo "✅ Torrust GUI built successfully!"
+
+echo "🎉 All Torrust services installed successfully!"
+`;
+
+    // Write installation script
+    fs.writeFileSync('/opt/torrust-admin/install-torrust.sh', installScript);
     
-    res.json({ 
-        success: true, 
-        message: 'Torrust configuration created. Ready to start services.',
-        services: services
+    // Make it executable
+    executeCommand('chmod +x /opt/torrust-admin/install-torrust.sh', (result) => {
+        if (result.success) {
+            // Run the installation script
+            executeCommand('cd /opt/torrust-admin && ./install-torrust.sh', (installResult) => {
+                if (installResult.success) {
+                    res.json({ 
+                        success: true, 
+                        message: 'Torrust services installed successfully! Ready to start.',
+                        services: services,
+                        output: installResult.stdout
+                    });
+                } else {
+                    res.json({ 
+                        success: false, 
+                        error: 'Installation failed: ' + installResult.error,
+                        output: installResult.stderr
+                    });
+                }
+            });
+        } else {
+            res.json({ 
+                success: false, 
+                error: 'Failed to make installation script executable' 
+            });
+        }
     });
 });
 
@@ -179,12 +205,53 @@ app.post('/api/torrust/start', (req, res) => {
     
     if (service === 'all') {
         // Start all Torrust services
-        executeCommand('cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml up -d', (result) => {
+        const startScript = `#!/bin/bash
+cd /opt/torrust-admin
+
+# Start Torrust Tracker
+echo "🚀 Starting Torrust Tracker..."
+cd torrust-services/tracker
+nohup ./target/release/torrust-tracker > /opt/torrust-admin/logs/tracker.log 2>&1 &
+echo $! > /opt/torrust-admin/tracker.pid
+cd ..
+
+# Start Torrust Index
+echo "🚀 Starting Torrust Index..."
+cd index
+nohup ./target/release/torrust-index > /opt/torrust-admin/logs/index.log 2>&1 &
+echo $! > /opt/torrust-admin/index.pid
+cd ..
+
+# Start Torrust GUI
+echo "🚀 Starting Torrust GUI..."
+cd gui
+nohup npm run preview > /opt/torrust-admin/logs/gui.log 2>&1 &
+echo $! > /opt/torrust-admin/gui.pid
+cd ..
+
+echo "✅ All Torrust services started!"
+`;
+
+        fs.writeFileSync('/opt/torrust-admin/start-torrust.sh', startScript);
+        executeCommand('chmod +x /opt/torrust-admin/start-torrust.sh && mkdir -p /opt/torrust-admin/logs && cd /opt/torrust-admin && ./start-torrust.sh', (result) => {
             res.json(result);
         });
     } else {
         // Start specific service
-        executeCommand(`cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml up -d ${service}`, (result) => {
+        let startCommand = '';
+        switch(service) {
+            case 'tracker':
+                startCommand = 'cd /opt/torrust-admin/torrust-services/tracker && nohup ./target/release/torrust-tracker > /opt/torrust-admin/logs/tracker.log 2>&1 &';
+                break;
+            case 'index':
+                startCommand = 'cd /opt/torrust-admin/torrust-services/index && nohup ./target/release/torrust-index > /opt/torrust-admin/logs/index.log 2>&1 &';
+                break;
+            case 'gui':
+                startCommand = 'cd /opt/torrust-admin/torrust-services/gui && nohup npm run preview > /opt/torrust-admin/logs/gui.log 2>&1 &';
+                break;
+        }
+        
+        executeCommand(`mkdir -p /opt/torrust-admin/logs && ${startCommand}`, (result) => {
             res.json(result);
         });
     }
