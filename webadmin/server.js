@@ -223,6 +223,25 @@ app.get('/api/torrust/status', (req, res) => {
     });
 });
 
+// Add missing logs endpoint for individual services
+app.get('/api/services/:name/logs', (req, res) => {
+    const { name } = req.params;
+    
+    // Check if the service exists in our configuration
+    if (!TORRUST_SERVICES[name]) {
+        return res.json({ 
+            success: false, 
+            error: `Service ${name} not found` 
+        });
+    }
+    
+    // For now, return a placeholder since services aren't running yet
+    res.json({ 
+        success: true, 
+        data: `No logs available for ${name}. Service is not running yet.` 
+    });
+});
+
 // Serve the main dashboard
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
