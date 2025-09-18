@@ -111,8 +111,8 @@ if lsof -i :80 >/dev/null 2>&1; then
     # Update nginx config to use different port
     sed -i 's/listen 80;/listen 8081;/' nginx/nginx.conf
     sed -i 's/listen 443 ssl http2;/listen 8443 ssl http2;/' nginx/nginx.conf
-    sed -i 's/80:80/8081:80/' docker-compose.yml
-    sed -i 's/443:443/8443:443/' docker-compose.yml
+    sed -i 's/"80:80"/"8081:80"/' docker-compose.yml
+    sed -i 's/"443:443"/"8443:443"/' docker-compose.yml
     log "Updated nginx to use ports 8081 (HTTP) and 8443 (HTTPS)"
 else
     log "Port 80 is available. Using standard ports."
