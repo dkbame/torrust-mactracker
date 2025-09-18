@@ -102,13 +102,30 @@ chown -R root:root /opt/torrust-admin
 chmod -R 755 /opt/torrust-admin
 chmod +x *.sh
 
+# Check for port conflicts and configure firewall
+log "🔥 Checking for port conflicts..."
+
+# Check if port 80 is in use
+if lsof -i :80 >/dev/null 2>&1; then
+    warn "Port 80 is already in use. Web admin will be available on port 8080 only."
+    # Update nginx config to use different port
+    sed -i 's/listen 80;/listen 8081;/' nginx/nginx.conf
+    sed -i 's/listen 443 ssl http2;/listen 8443 ssl http2;/' nginx/nginx.conf
+    sed -i 's/80:80/8081:80/' docker-compose.yml
+    sed -i 's/443:443/8443:443/' docker-compose.yml
+    log "Updated nginx to use ports 8081 (HTTP) and 8443 (HTTPS)"
+else
+    log "Port 80 is available. Using standard ports."
+fi
+
 # Configure firewall
-log "🔥 Configuring firewall..."
 ufw --force enable
 ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw allow 8080/tcp
+ufw allow 8081/tcp
+ufw allow 8443/tcp
 
 # Start services
 log "🚀 Starting Web Admin services..."
@@ -165,8 +182,14 @@ echo ""
 echo "🎉 Torrust Web Admin is now running!"
 echo ""
 echo "📊 Access Points:"
-echo "   • Web Admin: http://$(curl -s ifconfig.me):8080"
-echo "   • Web Admin (HTTPS): https://$(curl -s ifconfig.me)"
+if lsof -i :80 >/dev/null 2>&1; then
+    echo "   • Web Admin: http://$(curl -s ifconfig.me):8080"
+    echo "   • Nginx (HTTP): http://$(curl -s ifconfig.me):8081"
+    echo "   • Nginx (HTTPS): https://$(curl -s ifconfig.me):8443"
+else
+    echo "   • Web Admin: http://$(curl -s ifconfig.me):8080"
+    echo "   • Web Admin (HTTPS): https://$(curl -s ifconfig.me)"
+fi
 echo ""
 echo "🔧 Management Commands:"
 echo "   • View logs: docker-compose logs -f"
