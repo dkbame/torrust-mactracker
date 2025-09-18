@@ -179,12 +179,12 @@ app.post('/api/torrust/start', (req, res) => {
     
     if (service === 'all') {
         // Start all Torrust services
-        executeCommand('cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml up -d', (result) => {
+        executeCommand('cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml up -d', (result) => {
             res.json(result);
         });
     } else {
         // Start specific service
-        executeCommand(`cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml up -d ${service}`, (result) => {
+        executeCommand(`cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml up -d ${service}`, (result) => {
             res.json(result);
         });
     }
@@ -195,12 +195,12 @@ app.post('/api/torrust/stop', (req, res) => {
     
     if (service === 'all') {
         // Stop all Torrust services
-        executeCommand('cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml down', (result) => {
+        executeCommand('cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml down', (result) => {
             res.json(result);
         });
     } else {
         // Stop specific service
-        executeCommand(`cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml stop ${service}`, (result) => {
+        executeCommand(`cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml stop ${service}`, (result) => {
             res.json(result);
         });
     }
@@ -209,13 +209,13 @@ app.post('/api/torrust/stop', (req, res) => {
 app.get('/api/torrust/logs/:service', (req, res) => {
     const { service } = req.params;
     
-    executeCommand(`cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml logs --tail=100 ${service}`, (result) => {
+    executeCommand(`cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml logs --tail=100 ${service}`, (result) => {
         res.json(result);
     });
 });
 
 app.get('/api/torrust/status', (req, res) => {
-    executeCommand('cd /opt/torrust-admin && docker-compose -f torrust-docker-compose.yml ps', (result) => {
+    executeCommand('cd /opt/torrust-admin && /usr/local/bin/docker-compose -f torrust-docker-compose.yml ps', (result) => {
         res.json(result);
     });
 });
@@ -224,8 +224,17 @@ app.get('/api/torrust/status', (req, res) => {
 app.get('/api/services/:name/logs', (req, res) => {
     const { name } = req.params;
     
+    // Map service names to our configuration
+    const serviceMap = {
+        'torrust-tracker': 'tracker',
+        'torrust-index': 'index', 
+        'torrust-gui': 'gui'
+    };
+    
+    const serviceKey = serviceMap[name] || name;
+    
     // Check if the service exists in our configuration
-    if (!TORRUST_SERVICES[name]) {
+    if (!TORRUST_SERVICES[serviceKey]) {
         return res.json({ 
             success: false, 
             error: `Service ${name} not found` 
