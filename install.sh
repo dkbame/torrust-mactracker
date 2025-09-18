@@ -60,19 +60,16 @@ apt install -y nodejs
 
 # Create application directory
 log "📁 Creating application directory..."
+if [ -d "/opt/torrust-admin" ]; then
+    log "📁 Directory exists, removing old installation..."
+    rm -rf /opt/torrust-admin
+fi
 mkdir -p /opt/torrust-admin
 cd /opt/torrust-admin
 
 # Clone the repository
 log "📥 Cloning Torrust Web Admin repository..."
 git clone https://github.com/dkbame/torrust-mactracker.git .
-
-# Copy configuration files
-log "📋 Copying configuration files..."
-cp docker-compose.yml /opt/torrust-admin/
-cp -r nginx /opt/torrust-admin/
-cp -r webadmin /opt/torrust-admin/
-cp -r config /opt/torrust-admin/
 
 # Create environment file
 log "🔐 Creating environment configuration..."
